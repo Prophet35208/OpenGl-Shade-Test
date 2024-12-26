@@ -71,39 +71,39 @@ def createSimpleShaders(ctx):
     vertex_shader = """
         #version 330 core
 
-        in vec3 in_position; // Координаты вершины
-        in vec3 in_normal;   // Нормаль к вершине
+        in vec3 in_position;
+        in vec3 in_normal;
 
-        uniform mat4 projection; // Матрицы проекции и видовая.
+        uniform mat4 projection;
         uniform mat4 view;
-
+        
         uniform vec3 light_pos;
         uniform vec3 light_color;
 
-        out float intensity;
+        flat out float intensity;
 
         void main() {
-            // Получаем позицию после преобразованием видовой матрицей и матрицей проекции
-            gl_Position = projection * view * vec4(in_position, 1.0); 
+            gl_Position = projection * view * vec4(in_position, 1.0);
 
             vec3 norm = normalize(in_normal);
             vec3 frag_pos = vec3(view * vec4(in_position, 1.0));
             vec3 light_dir = normalize(light_pos - frag_pos);
-            // Определяем интенсивность света по диффузной составляющей
+            
             float diff = max(dot(norm, light_dir), 0.0);
             vec3 diffuse = diff * light_color;
-            // Берём интенсивность света как длину вектора diffuse
-            intensity = length(diffuse);  
+            intensity = length(diffuse);    
         }
     """
     fragment_shader = """
         #version 330 core
 
         out vec4 fragColor;
-        in float intensity;
+        flat in float intensity;
 
         void main() {
-            fragColor = vec4(vec3(intensity), 1.0);
+            vec3 base_color = vec3(0.5, 0.5, 0.5);
+            vec3 final_color = base_color * intensity;
+            fragColor = vec4(final_color, 1.0);
             }
         """
         
@@ -129,7 +129,7 @@ def createPhongShaders(ctx):
             }
         """
     fragment_shader = """
-        #version 330 core
+         #version 330 core
 
         out vec4 fragColor;
         in vec3 normal;
@@ -143,21 +143,23 @@ def createPhongShaders(ctx):
         uniform vec3 specular_intensity;  // Is
 
         void main() {
+          vec3 base_color = vec3(0.5, 0.5, 0.5);
+
           // Вычисляем фоновую составляющую
-          vec3 ambient = ambient_intensity;
+          vec3 ambient = ambient_intensity * base_color;
 
           vec3 norm = normalize(normal);
           vec3 light_dir = normalize(light_pos - frag_pos);
 
-          // Вычисляем диффузную состовляющую
+          // Вычисляем диффузную составляющую
           float diff = max(dot(norm, light_dir), 0.0);
-          vec3 diffuse = diff * diffuse_intensity;
+          vec3 diffuse = diff * diffuse_intensity * base_color;
 
-          // Вычисляем зеркальную состовляющую
+          // Вычисляем зеркальную составляющую
           vec3 view_dir = normalize(-frag_pos);
           vec3 reflect_dir = reflect(-light_dir, norm);
           float spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32);
-          vec3 specular = spec * specular_intensity;
+          vec3 specular = spec * specular_intensity * base_color;
 
           // Фикс, чтобы не видеть блики на обратной стороне объекта
           if (dot(norm, view_dir) < 0.0)
