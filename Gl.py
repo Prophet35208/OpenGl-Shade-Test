@@ -5,7 +5,6 @@ from camera import Camera
 from light import Light
 import numpy as np
 import glm
-from OpenGL.GL import *
 import math
 
 
